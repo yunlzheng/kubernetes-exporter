@@ -1,0 +1,63 @@
+package main
+
+import (
+	"flag"
+	"net/http"
+	"os"
+
+	log "github.com/Sirupsen/logrus"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/yunlzheng/kubernates-exporter/measure"
+)
+
+const (
+	namespace = "kubernates" // Used to prepand Prometheus metrics created by this exporter.
+)
+
+var (
+	metricsPath   = getEnv("METRICS_PATH", "/metrics")
+	listenAddress = getEnv("LISTEN_ADDRESS", ":9174")
+	endpoints     = []string{"nodes", "pods", "deployments"}
+	logLevel      = getEnv("LOG_LEVEL", "info") // Optional - Set the logging level
+)
+
+func main() {
+
+	flag.Parse()
+
+	setLogLevel(logLevel)
+
+	log.Info("Starting Kubernates Exporter for Kubernates")
+	log.Info("Runtime Configuration")
+
+	measure.Init()
+
+	Exporter := newExporter()
+
+	prometheus.MustRegister(Exporter)
+
+	// Setup HTTP handler
+	http.Handle(metricsPath, prometheus.Handler())
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`<html>
+		                <head><title>Kubernates exporter</title></head>
+		                <body>
+		                   <h1>kubernates exporter</h1>
+		                   <p><a href='` + metricsPath + `'>Metrics</a></p>
+		                   </body>
+		                </html>
+		              `))
+	})
+	log.Printf("Starting Server on port %s and path %s", listenAddress, metricsPath)
+	log.Fatal(http.ListenAndServe(listenAddress, nil))
+
+}
+
+func getEnv(key, fallback string) string {
+	value := os.Getenv(key)
+	if len(value) == 0 {
+		return fallback
+	}
+	return value
+}
