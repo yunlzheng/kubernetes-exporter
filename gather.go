@@ -43,11 +43,15 @@ func (d *Discovery) Run() *GathData {
 		return nil
 	}
 
+	fmt.Println(pods, "pods")
+
 	nodes := &v1.NodeList{}
 	err = rclient.Get().Namespace(api.NamespaceAll).Resource("nodes").FieldsSelectorParam(nil).Do().Into(nodes)
 	if err != nil {
 		return nil
 	}
+
+	fmt.Println(nodes, "nodes")
 
 	services := &v1.ServiceList{}
 	err = rclient.Get().Namespace(api.NamespaceAll).Resource("services").FieldsSelectorParam(nil).Do().Into(services)
@@ -55,11 +59,15 @@ func (d *Discovery) Run() *GathData {
 		return nil
 	}
 
+	fmt.Println(services, "services")
+
 	endpoints := &v1.EndpointsList{}
 	err = rclient.Get().Namespace(api.NamespaceAll).Resource("endpoints").FieldsSelectorParam(nil).Do().Into(endpoints)
 	if err != nil {
 		return nil
 	}
+
+	fmt.Println(endpoints, "endpoints")
 
 	return &GathData{
 		pods:      pods,
