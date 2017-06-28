@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
@@ -44,6 +46,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 			for _, deployment := range gathData.deployments.Items {
 				var state float64
+				fmt.Println(deployment.Name, deployment.Status)
 				for _, condition := range deployment.Status.Conditions {
 					if condition.Type == v1beta1.DeploymentAvailable {
 						state = 1
