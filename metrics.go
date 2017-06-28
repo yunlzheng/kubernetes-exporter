@@ -14,5 +14,11 @@ func addMetrics() map[string]*prometheus.GaugeVec {
 			Help:      "HealthState of pod reported by kubernates",
 		}, []string{"name", "health_state"})
 
+	gaugeVecs["exporter"] = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: namespace,
+		Name:      "exporter_debug_state",
+		Help:      "Debug",
+	}, []string{"name", "state"})
+
 	return gaugeVecs
 }

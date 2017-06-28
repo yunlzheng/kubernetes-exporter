@@ -3,7 +3,6 @@ package main
 import "github.com/prometheus/client_golang/prometheus"
 
 func (e *Exporter) resetGaugeVecs() {
-
 	for _, m := range e.gaugeVecs {
 		m.Reset()
 	}
@@ -24,6 +23,8 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	defer e.mutex.Unlock()
 
 	e.resetGaugeVecs() // Clean starting point
+
+	e.gaugeVecs["exporter"].With(prometheus.Labels{"name": "name", "state": "state"}).Set(1)
 
 	for _, m := range e.gaugeVecs {
 		m.Collect(ch)

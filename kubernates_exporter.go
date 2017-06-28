@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"net/http"
+	"net/url"
 	"os"
 
 	log "github.com/Sirupsen/logrus"
@@ -16,10 +17,15 @@ const (
 )
 
 var (
-	metricsPath   = getEnv("METRICS_PATH", "/metrics")
-	listenAddress = getEnv("LISTEN_ADDRESS", ":9174")
-	endpoints     = []string{"nodes", "pods", "deployments"}
-	logLevel      = getEnv("LOG_LEVEL", "info") // Optional - Set the logging level
+	metricsPath     = getEnv("METRICS_PATH", "/metrics")
+	listenAddress   = getEnv("LISTEN_ADDRESS", ":9174")
+	endpoints       = []string{"nodes", "pods", "deployments"}
+	logLevel        = getEnv("LOG_LEVEL", "info") // Optional - Set the logging level
+	apiServer       = "https://kubernetes.default.svc"
+	bearerTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+	tslConfig       = &TLSConfig{
+		CAFile: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
+	}
 )
 
 func main() {
@@ -33,7 +39,13 @@ func main() {
 
 	measure.Init()
 
-	Exporter := newExporter()
+	APIServer, err := url.Parse(apiServer)
+	if err != nil {
+		log.Printf("Kubernates APIServer invalidate")
+		os.Exit(1)
+	}
+
+	Exporter := newExporter(APIServer, bearerTokenFile, tslConfig)
 
 	prometheus.MustRegister(Exporter)
 
