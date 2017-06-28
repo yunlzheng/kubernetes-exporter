@@ -14,6 +14,13 @@ func addMetrics() map[string]*prometheus.GaugeVec {
 			Help:      "status of node reported by kubernates",
 		}, []string{"name", "namespace"})
 
+	gaugeVecs["deployments"] = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "deployment_status",
+			Help:      "status of deployment reported by kubernates",
+		}, []string{"name", "namespace"})
+
 	gaugeVecs["pods"] = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: namespace,

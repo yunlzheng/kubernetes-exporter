@@ -1,6 +1,10 @@
 package main
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+)
 
 func (e *Exporter) resetGaugeVecs() {
 	for _, m := range e.gaugeVecs {
@@ -10,7 +14,6 @@ func (e *Exporter) resetGaugeVecs() {
 
 // Describe describes all the metrics ever exported by the Rancher exporter
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
-
 	for _, m := range e.gaugeVecs {
 		m.Describe(ch)
 	}
@@ -28,12 +31,27 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		if gathData != nil {
 
 			for _, pod := range gathData.pods.Items {
-				e.gaugeVecs["pods"].With(prometheus.Labels{"name": pod.Name, "namespace": pod.Namespace, "podPhase": string(pod.Status.Phase), "hostIP": pod.Status.HostIP, "podIP": pod.Status.PodIP, "reason": pod.Status.Reason, "message": pod.Status.Message}).Set(1)
+				var state float64
+				if pod.Status.Phase == v1.PodRunning {
+					state = 1
+				}
+				e.gaugeVecs["pods"].With(prometheus.Labels{"name": pod.Name, "namespace": pod.Namespace, "podPhase": string(pod.Status.Phase), "hostIP": pod.Status.HostIP, "podIP": pod.Status.PodIP, "reason": pod.Status.Reason, "message": pod.Status.Message}).Set(state)
 			}
 
 			for _, node := range gathData.nodes.Items {
 				e.gaugeVecs["nodes"].With(prometheus.Labels{"name": node.Name, "namespace": node.Namespace}).Set(1)
 			}
+
+			for _, deployment := range gathData.deployments.Items {
+				var state float64
+				for _, condition := range deployment.Status.Conditions {
+					if condition.Type == v1beta1.DeploymentAvailable {
+						state = 1
+					}
+				}
+				e.gaugeVecs["deployments"].With(prometheus.Labels{"name": deployment.Name, "namespace": deployment.Namespace}).Set(state)
+			}
+
 		}
 	}
 

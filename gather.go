@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	// metaapi "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/client-go/1.5/kubernetes"
-	"k8s.io/client-go/1.5/pkg/api"
-	"k8s.io/client-go/1.5/pkg/api/v1"
-	"k8s.io/client-go/1.5/rest"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
+	"k8s.io/client-go/rest"
 )
 
 // Data kubernate rest data
@@ -25,44 +24,43 @@ type Discovery struct {
 
 // GathData kubernates data
 type GathData struct {
-	pods      *v1.PodList
-	nodes     *v1.NodeList
-	services  *v1.ServiceList
-	endpoints *v1.EndpointsList
+	pods        *v1.PodList
+	nodes       *v1.NodeList
+	services    *v1.ServiceList
+	endpoints   *v1.EndpointsList
+	deployments *v1beta1.DeploymentList
 }
 
 // Run fetch kubernates data
 func (d *Discovery) Run() *GathData {
-	rclient := d.client.Core().GetRESTClient()
 
-	fmt.Println(rclient.APIVersion(), "api version")
-
-	pods := &v1.PodList{}
-	err := rclient.Get().Namespace(api.NamespaceAll).Resource("pods").FieldsSelectorParam(nil).Do().Into(pods)
+	deployments, err := d.client.ExtensionsV1beta1().Deployments(api.NamespaceAll).List(v1.ListOptions{})
 	if err != nil {
 		return nil
 	}
+	fmt.Println(deployments, "deployments")
 
+	//pods := &v1.PodList{}
+	pods, err := d.client.Core().Pods(api.NamespaceAll).List(v1.ListOptions{})
+	if err != nil {
+		return nil
+	}
 	fmt.Println(pods, "pods")
 
-	nodes := &v1.NodeList{}
-	err = rclient.Get().Namespace(api.NamespaceAll).Resource("nodes").FieldsSelectorParam(nil).Do().Into(nodes)
+	nodes, err := d.client.Core().Nodes().List(v1.ListOptions{})
 	if err != nil {
 		return nil
 	}
-
 	fmt.Println(nodes, "nodes")
 
-	services := &v1.ServiceList{}
-	err = rclient.Get().Namespace(api.NamespaceAll).Resource("services").FieldsSelectorParam(nil).Do().Into(services)
+	services, err := d.client.Core().Services(api.NamespaceAll).List(v1.ListOptions{})
 	if err != nil {
 		return nil
 	}
 
 	fmt.Println(services, "services")
 
-	endpoints := &v1.EndpointsList{}
-	err = rclient.Get().Namespace(api.NamespaceAll).Resource("endpoints").FieldsSelectorParam(nil).Do().Into(endpoints)
+	endpoints, err := d.client.Core().Endpoints(api.NamespaceAll).List(v1.ListOptions{})
 	if err != nil {
 		return nil
 	}
@@ -70,10 +68,11 @@ func (d *Discovery) Run() *GathData {
 	fmt.Println(endpoints, "endpoints")
 
 	return &GathData{
-		pods:      pods,
-		nodes:     nodes,
-		services:  services,
-		endpoints: endpoints,
+		pods:        pods,
+		nodes:       nodes,
+		services:    services,
+		endpoints:   endpoints,
+		deployments: deployments,
 	}
 
 }
