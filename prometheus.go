@@ -28,7 +28,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		if gathData != nil {
 
 			for _, pod := range gathData.pods.Items {
-				e.gaugeVecs["pods"].With(prometheus.Labels{"name": pod.Name, "namespace": pod.Namespace, "podPhase": string(pod.Status.Phase), "hostIP": pod.Status.HostIP, "podIP": pod.Status.PodIP, "reason": pod.Status.Reason}).Set(1)
+				e.gaugeVecs["pods"].With(prometheus.Labels{"name": pod.Name, "namespace": pod.Namespace, "podPhase": string(pod.Status.Phase), "hostIP": pod.Status.HostIP, "podIP": pod.Status.PodIP, "reason": pod.Status.Reason, "message": pod.Status.Message}).Set(1)
 			}
 
 			for _, node := range gathData.nodes.Items {
