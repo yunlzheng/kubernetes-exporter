@@ -23,8 +23,19 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	defer e.mutex.Unlock()
 
 	e.resetGaugeVecs() // Clean starting point
-	e.gatherData(ch)
-	e.gaugeVecs["exporter"].With(prometheus.Labels{"name": "name", "state": "state"}).Set(1)
+	gathData, err := e.gatherData(ch)
+	if err == nil {
+		if gathData != nil {
+
+			for _, pod := range gathData.pods.Items {
+				e.gaugeVecs["pods"].With(prometheus.Labels{"name": pod.Name, "namespace": pod.Namespace, "podPhase": string(pod.Status.Phase), "hostIP": pod.Status.HostIP, "podIP": pod.Status.PodIP, "reason": pod.Status.Reason}).Set(1)
+			}
+
+			for _, node := range gathData.nodes.Items {
+				e.gaugeVecs["nodes"].With(prometheus.Labels{"name": node.Name, "namespace": node.Namespace}).Set(1)
+			}
+		}
+	}
 
 	for _, m := range e.gaugeVecs {
 		m.Collect(ch)
