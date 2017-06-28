@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    prometheus.io/scrape: 'true'
+  labels:
+    app: kubernates-exporter
+    name: kubernates-exporter
+  name: kubernates-exporter
+spec:
+  selector:
+    app: kubernates-exporter
+  ports:
+  - name: kubernates-exporter
+    protocol: TCP
+    port: 9174
+    targetPort: 9174
+  type: NodePort
+----
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kubernates-exporter
+  labels:
+    name: kubernates-exporter
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: kubernates-exporter
+    spec:
+      serviceAccountName: prometheus
+      serviceAccount: prometheus
+      containers:
+      - name: kubernates-exporter
+        image: wisecity/kubernates-exporter
+        ports:
+        - containerPort: 9174
+          protocol: TCP
