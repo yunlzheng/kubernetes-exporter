@@ -23,7 +23,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	defer e.mutex.Unlock()
 
 	e.resetGaugeVecs() // Clean starting point
-
+	e.gatherData(ch)
 	e.gaugeVecs["exporter"].With(prometheus.Labels{"name": "name", "state": "state"}).Set(1)
 
 	for _, m := range e.gaugeVecs {

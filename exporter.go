@@ -18,16 +18,18 @@ type Exporter struct {
 	gaugeVecs       map[string]*prometheus.GaugeVec
 }
 
-func newExporter(APIServer *url.URL, BearerTokenFile string, TLSConfig *TLSConfig) *Exporter {
+func newExporter(APIServer *url.URL, BearerToken string, BearerTokenFile string, TLSConfig *TLSConfig) *Exporter {
 	gaugeVecs := addMetrics()
 	return &Exporter{
 		APIServer:       APIServer,
+		BearerToken:     BearerToken,
 		BearerTokenFile: BearerTokenFile,
 		TLSConfig:       TLSConfig,
 		gaugeVecs:       gaugeVecs,
 	}
 }
 
+// TLSConfig kubernates client tls config
 type TLSConfig struct {
 	CAFile             string
 	CertFile           string
@@ -37,17 +39,8 @@ type TLSConfig struct {
 	XXX                map[string]interface{}
 }
 
+// BasicAuth kubernates client basic auth
 type BasicAuth struct {
 	Username string
 	Password string
 }
-
-type KubernetesRole string
-
-// The valid options for KubernetesRole.
-const (
-	KubernetesRoleNode     = "node"
-	KubernetesRolePod      = "pod"
-	KubernetesRoleService  = "service"
-	KubernetesRoleEndpoint = "endpoints"
-)
