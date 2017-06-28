@@ -34,6 +34,8 @@ type GathData struct {
 // Run fetch kubernates data
 func (d *Discovery) Run() *GathData {
 
+	fmt.Println("Discovery Run")
+
 	deployments, err := d.client.ExtensionsV1beta1().Deployments(api.NamespaceAll).List(v1.ListOptions{})
 	if err != nil {
 		return nil
