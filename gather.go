@@ -38,6 +38,7 @@ func (d *Discovery) Run() *GathData {
 
 	deployments, err := d.client.ExtensionsV1beta1().Deployments(api.NamespaceAll).List(v1.ListOptions{})
 	if err != nil {
+		fmt.Println(err)
 		return nil
 	}
 	fmt.Println(deployments, "deployments")
@@ -45,18 +46,21 @@ func (d *Discovery) Run() *GathData {
 	//pods := &v1.PodList{}
 	pods, err := d.client.Core().Pods(api.NamespaceAll).List(v1.ListOptions{})
 	if err != nil {
+		fmt.Println(err)
 		return nil
 	}
 	fmt.Println(pods, "pods")
 
 	nodes, err := d.client.Core().Nodes().List(v1.ListOptions{})
 	if err != nil {
+		fmt.Println(err)
 		return nil
 	}
 	fmt.Println(nodes, "nodes")
 
 	services, err := d.client.Core().Services(api.NamespaceAll).List(v1.ListOptions{})
 	if err != nil {
+		fmt.Println(err)
 		return nil
 	}
 
@@ -64,6 +68,7 @@ func (d *Discovery) Run() *GathData {
 
 	endpoints, err := d.client.Core().Endpoints(api.NamespaceAll).List(v1.ListOptions{})
 	if err != nil {
+		fmt.Println(err)
 		return nil
 	}
 
