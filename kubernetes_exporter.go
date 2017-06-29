@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	namespace = "kubernates" // Used to prepand Prometheus metrics created by this exporter.
+	namespace = "kubernetes" // Used to prepand Prometheus metrics created by this exporter.
 )
 
 var (
