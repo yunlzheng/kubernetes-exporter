@@ -107,7 +107,7 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 func getDeploymentState(deployment v1beta1.Deployment) float64 {
 	var state float64 = 1
 	for _, condition := range deployment.Status.Conditions {
-		if condition.Type != v1beta1.DeploymentAvailable {
+		if condition.Type != v1beta1.DeploymentAvailable && condition.Status == v1.ConditionTrue {
 			state = 0
 		}
 	}
