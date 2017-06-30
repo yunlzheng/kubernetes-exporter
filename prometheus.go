@@ -47,15 +47,40 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 			for _, node := range gathData.nodes.Items {
 				var state float64 = 1
 				var nodeState = "Ready"
+				var hostname = ""
+				var externalIp = ""
+				var internalIp = ""
+
+				for _, address := range node.Status.Addresses {
+					if address.Type == v1.NodeHostName {
+						hostname = address.Address
+					} else if address.Type == v1.NodeExternalIP {
+						externalIp = address.Address
+					} else if address.Type == v1.NodeInternalIP {
+						internalIp = address.Address
+					}
+				}
 
 				for _, item := range node.Status.Conditions {
-					if item.Type != v1.NodeReady {
+					if item.Type != v1.NodeReady && item.Status == v1.ConditionTrue {
 						state = 0
 						nodeState = string(item.Type)
 					}
 				}
 
-				e.gaugeVecs["nodes"].With(prometheus.Labels{"name": node.Name, "namespace": node.Namespace, "nodePhase": string(node.Status.Phase), "nodeState": nodeState}).Set(state)
+				e.gaugeVecs["nodes"].With(
+					prometheus.Labels{
+						"name":                    node.Name,
+						"nodeState":               nodeState,
+						"osImage":                 node.Status.NodeInfo.OSImage,
+						"containerRuntimeVersion": node.Status.NodeInfo.ContainerRuntimeVersion,
+						"kubeletVersion":          node.Status.NodeInfo.KubeletVersion,
+						"operatingSystem":         node.Status.NodeInfo.OperatingSystem,
+						"architecture":            node.Status.NodeInfo.Architecture,
+						"hostname":                hostname,
+						"externalIp":              externalIp,
+						"internalIp":              internalIp,
+					}).Set(state)
 			}
 
 			for _, deployment := range gathData.deployments.Items {
