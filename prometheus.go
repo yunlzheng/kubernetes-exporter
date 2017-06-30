@@ -33,23 +33,27 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		if gathData != nil {
 
 			for _, pod := range gathData.pods.Items {
-				var state float64
-				if pod.Status.Phase == v1.PodRunning {
-					state = 1
+				var state float64 = 1
+				if pod.Status.Phase != v1.PodRunning {
+					state = 0
 				}
 				e.gaugeVecs["pods"].With(prometheus.Labels{"name": pod.Name, "namespace": pod.Namespace, "podPhase": string(pod.Status.Phase), "hostIP": pod.Status.HostIP, "podIP": pod.Status.PodIP, "reason": pod.Status.Reason, "message": pod.Status.Message}).Set(state)
 			}
 
 			for _, node := range gathData.nodes.Items {
-				e.gaugeVecs["nodes"].With(prometheus.Labels{"name": node.Name, "namespace": node.Namespace}).Set(1)
+				var state float64 = 1
+				if node.Status.Phase != v1.NodeRunning {
+					state = 0
+				}
+				e.gaugeVecs["nodes"].With(prometheus.Labels{"name": node.Name, "namespace": node.Namespace}).Set(state)
 			}
 
 			for _, deployment := range gathData.deployments.Items {
-				var state float64
+				var state float64 = 1
 				fmt.Println(deployment.Name, deployment.Status)
 				for _, condition := range deployment.Status.Conditions {
-					if condition.Type == v1beta1.DeploymentAvailable {
-						state = 1
+					if condition.Type != v1beta1.DeploymentAvailable {
+						state = 0
 					}
 				}
 				e.gaugeVecs["deployments"].With(prometheus.Labels{"name": deployment.Name, "namespace": deployment.Namespace}).Set(state)
