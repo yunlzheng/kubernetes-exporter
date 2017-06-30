@@ -26,7 +26,7 @@ func addMetrics() map[string]*prometheus.GaugeVec {
 			Namespace: namespace,
 			Name:      "pod_status",
 			Help:      "status of pod reported by kubernates",
-		}, []string{"name", "namespace", "podPhase", "hostIP", "podIP", "reason", "message", "containerSize"})
+		}, []string{"name", "namespace", "podPhase", "hostIP", "podIP", "reason", "message", "containerCount"})
 
 	return gaugeVecs
 }
