@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/kubernetes"
@@ -29,6 +30,7 @@ type GathData struct {
 	services    *v1.ServiceList
 	endpoints   *v1.EndpointsList
 	deployments *v1beta1.DeploymentList
+	stacks      map[Stack]*[]v1beta1.Deployment
 }
 
 // Run fetch kubernates data
@@ -66,6 +68,23 @@ func (d *Discovery) Run() *GathData {
 		return nil
 	}
 
+	stacks := map[Stack]*[]v1beta1.Deployment{}
+
+	for _, deployment := range deployments.Items {
+		stack := Stack{
+			Name:      stackName(deployment),
+			Namespace: deployment.Namespace,
+		}
+
+		if deployments, ok := stacks[stack]; ok {
+			*deployments = append(*deployments, deployment)
+			stacks[stack] = deployments
+		} else {
+			stacks[stack] = &[]v1beta1.Deployment{deployment}
+		}
+
+	}
+
 	fmt.Println("kubernate gather finished")
 
 	return &GathData{
@@ -74,6 +93,7 @@ func (d *Discovery) Run() *GathData {
 		services:    services,
 		endpoints:   endpoints,
 		deployments: deployments,
+		stacks:      stacks,
 	}
 
 }
@@ -131,4 +151,14 @@ func (e *Exporter) gatherData(ch chan<- prometheus.Metric) (*GathData, error) {
 	data := discovery.Run()
 	return data, nil
 
+}
+
+// Stack group of deployment
+type Stack struct {
+	Name      string
+	Namespace string
+}
+
+func stackName(deployment v1beta1.Deployment) string {
+	return strings.Split(deployment.Name, "-")[0]
 }

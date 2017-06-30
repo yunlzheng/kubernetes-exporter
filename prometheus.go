@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -47,17 +46,15 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 			for _, node := range gathData.nodes.Items {
 				var state float64 = 1
 				var nodeState = "Ready"
-				var hostname = ""
-				var externalIp = ""
-				var internalIp = ""
+				var hostname, externalIP, internalIP string
 
 				for _, address := range node.Status.Addresses {
 					if address.Type == v1.NodeHostName {
 						hostname = address.Address
 					} else if address.Type == v1.NodeExternalIP {
-						externalIp = address.Address
+						externalIP = address.Address
 					} else if address.Type == v1.NodeInternalIP {
-						internalIp = address.Address
+						internalIP = address.Address
 					}
 				}
 
@@ -78,20 +75,24 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 						"operatingSystem":         node.Status.NodeInfo.OperatingSystem,
 						"architecture":            node.Status.NodeInfo.Architecture,
 						"hostname":                hostname,
-						"externalIp":              externalIp,
-						"internalIp":              internalIp,
+						"externalIp":              externalIP,
+						"internalIp":              internalIP,
 					}).Set(state)
 			}
 
 			for _, deployment := range gathData.deployments.Items {
+				e.gaugeVecs["deployments"].With(prometheus.Labels{"name": deployment.Name, "namespace": deployment.Namespace}).Set(getDeploymentState(deployment))
+			}
+
+			for stack, deployments := range gathData.stacks {
 				var state float64 = 1
-				for _, condition := range deployment.Status.Conditions {
-					fmt.Println(condition)
-					if condition.Type != v1beta1.DeploymentAvailable {
+				for _, deployment := range *deployments {
+					if getDeploymentState(deployment) == 0 {
 						state = 0
+						break
 					}
 				}
-				e.gaugeVecs["deployments"].With(prometheus.Labels{"name": deployment.Name, "namespace": deployment.Namespace}).Set(state)
+				e.gaugeVecs["stacks"].With(prometheus.Labels{"name": stack.Name, "namespace": stack.Namespace}).Set(state)
 			}
 
 		}
@@ -101,4 +102,14 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 		m.Collect(ch)
 	}
 
+}
+
+func getDeploymentState(deployment v1beta1.Deployment) float64 {
+	var state float64 = 1
+	for _, condition := range deployment.Status.Conditions {
+		if condition.Type != v1beta1.DeploymentAvailable {
+			state = 0
+		}
+	}
+	return state
 }
