@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -45,15 +46,22 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 			for _, node := range gathData.nodes.Items {
 				var state float64 = 1
-				if node.Status.Phase != v1.NodeRunning {
-					state = 0
+				var nodeState = "Ready"
+
+				for _, item := range node.Status.Conditions {
+					if item.Type != v1.NodeReady {
+						state = 0
+						nodeState = string(item.Type)
+					}
 				}
-				e.gaugeVecs["nodes"].With(prometheus.Labels{"name": node.Name, "namespace": node.Namespace}).Set(state)
+
+				e.gaugeVecs["nodes"].With(prometheus.Labels{"name": node.Name, "namespace": node.Namespace, "nodePhase": string(node.Status.Phase), "nodeState": nodeState}).Set(state)
 			}
 
 			for _, deployment := range gathData.deployments.Items {
 				var state float64 = 1
 				for _, condition := range deployment.Status.Conditions {
+					fmt.Println(condition)
 					if condition.Type != v1beta1.DeploymentAvailable {
 						state = 0
 					}
