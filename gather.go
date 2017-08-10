@@ -31,6 +31,7 @@ type GathData struct {
 	endpoints   *v1.EndpointsList
 	deployments *v1beta1.DeploymentList
 	stacks      map[Stack]*[]v1beta1.Deployment
+	components  map[KubeComponent]*[]v1.Pod
 }
 
 // Run fetch kubernates data
@@ -82,7 +83,27 @@ func (d *Discovery) Run() *GathData {
 		} else {
 			stacks[stack] = &[]v1beta1.Deployment{deployment}
 		}
+	}
 
+	components := map[KubeComponent]*[]v1.Pod{}
+	for _, pod := range pods.Items {
+		if pod.Namespace == "kube-system" {
+			for _, component := range kubeComponents {
+				if strings.Contains(pod.Name, component) {
+					cmp := KubeComponent{
+						Name:      component,
+						Namespace: pod.Namespace,
+					}
+
+					if pods, ok := components[cmp]; ok {
+						*pods = append(*pods, pod)
+						components[cmp] = pods
+					} else {
+						components[cmp] = &[]v1.Pod{pod}
+					}
+				}
+			}
+		}
 	}
 
 	fmt.Println("kubernate gather finished")
@@ -94,6 +115,7 @@ func (d *Discovery) Run() *GathData {
 		endpoints:   endpoints,
 		deployments: deployments,
 		stacks:      stacks,
+		components:  components,
 	}
 
 }
@@ -159,6 +181,14 @@ type Stack struct {
 	Namespace string
 }
 
+// KubeComponent group of pod
+type KubeComponent struct {
+	Name      string
+	Namespace string
+}
+
 func stackName(deployment v1beta1.Deployment) string {
 	return strings.Split(deployment.Name, "-")[0]
 }
+
+var kubeComponents = []string{"etcd", "kube-apiserver", "kube-controller-manager", "kube-dns", "kube-flannel", "kube-proxy", "kube-scheduler", "kubernetes-dashboard"}

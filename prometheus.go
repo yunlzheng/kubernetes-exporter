@@ -95,6 +95,18 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 				e.gaugeVecs["stacks"].With(prometheus.Labels{"name": stack.Name, "namespace": stack.Namespace}).Set(state)
 			}
 
+			for component, pods := range gathData.components {
+				var state float64 = 1
+				for _, pod := range *pods {
+					for _, item := range pod.Status.ContainerStatuses {
+						if !item.Ready {
+							state = 0
+						}
+					}
+				}
+				e.gaugeVecs["components"].With(prometheus.Labels{"name": component.Name, "namespace": component.Namespace}).Set(state)
+			}
+
 		}
 	}
 
@@ -106,10 +118,8 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 func getDeploymentState(deployment v1beta1.Deployment) float64 {
 	var state float64 = 1
-	for _, condition := range deployment.Status.Conditions {
-		if condition.Type != v1beta1.DeploymentAvailable && condition.Status == v1.ConditionTrue {
-			state = 0
-		}
+	if deployment.Status.Replicas != deployment.Status.AvailableReplicas {
+		state = 0
 	}
 	return state
 }

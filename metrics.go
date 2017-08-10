@@ -25,6 +25,13 @@ func addMetrics() map[string]*prometheus.GaugeVec {
 			"internalIp",
 		})
 
+	gaugeVecs["components"] = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "component_status",
+			Help:      "status of kubenetes component reported by kubernates",
+		}, []string{"name", "namespace"})
+
 	gaugeVecs["stacks"] = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
