@@ -1,10 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/pkg/api/v1"
+	beta "k8s.io/client-go/pkg/apis/apps/v1beta1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 )
 
@@ -84,6 +86,14 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 				e.gaugeVecs["deployments"].With(prometheus.Labels{"name": deployment.Name, "namespace": deployment.Namespace}).Set(getDeploymentState(deployment))
 			}
 
+			for _, daemonset := range gathData.daemonsets.Items {
+				e.gaugeVecs["daemonsets"].With(prometheus.Labels{"name": daemonset.Name, "namespace": daemonset.Namespace}).Set(getDaemonSetState(daemonset))
+			}
+
+			for _, statefulset := range gathData.statefulsets.Items {
+				e.gaugeVecs["statefulsets"].With(prometheus.Labels{"name": statefulset.Name, "namespace": statefulset.Namespace}).Set(getStatefulSetState(statefulset))
+			}
+
 			for stack, deployments := range gathData.stacks {
 				var state float64 = 1
 				for _, deployment := range *deployments {
@@ -116,10 +126,27 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 
 }
 
+func getDaemonSetState(daemonset v1beta1.DaemonSet) float64 {
+	var state float64 = 1
+	if daemonset.Status.NumberReady != daemonset.Status.DesiredNumberScheduled {
+		state = 0
+	}
+	return state
+}
+
 func getDeploymentState(deployment v1beta1.Deployment) float64 {
 	var state float64 = 1
 	if deployment.Status.Replicas != deployment.Status.AvailableReplicas {
 		state = 0
 	}
+	return state
+}
+
+func getStatefulSetState(stateful beta.StatefulSet) float64 {
+	var state float64 = 1
+	fmt.Println(stateful.Spec.Selector, stateful.Status.Replicas)
+	// if stateful.Status.Replicas != stateful.Status.AvailableReplicas {
+	// 	state = 0
+	// }
 	return state
 }

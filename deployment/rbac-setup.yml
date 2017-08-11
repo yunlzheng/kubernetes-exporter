@@ -11,6 +11,8 @@ rules:
   - endpoints
   - pods
   - deployments
+  - daemonsets
+  - statefulsets
   - services
   verbs: ["get", "list", "watch"]
 - nonResourceURLs: ["/metrics"]

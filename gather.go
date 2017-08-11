@@ -9,6 +9,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/v1"
+	beta "k8s.io/client-go/pkg/apis/apps/v1beta1"
 	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/rest"
 )
@@ -25,21 +26,32 @@ type Discovery struct {
 
 // GathData kubernates data
 type GathData struct {
-	pods        *v1.PodList
-	nodes       *v1.NodeList
-	services    *v1.ServiceList
-	endpoints   *v1.EndpointsList
-	deployments *v1beta1.DeploymentList
-	stacks      map[Stack]*[]v1beta1.Deployment
-	components  map[KubeComponent]*[]v1.Pod
+	pods         *v1.PodList
+	nodes        *v1.NodeList
+	services     *v1.ServiceList
+	endpoints    *v1.EndpointsList
+	deployments  *v1beta1.DeploymentList
+	daemonsets   *v1beta1.DaemonSetList
+	statefulsets *beta.StatefulSetList
+	stacks       map[Stack]*[]v1beta1.Deployment
+	components   map[KubeComponent]*[]v1.Pod
 }
 
 // Run fetch kubernates data
 func (d *Discovery) Run() *GathData {
 
-	fmt.Println("kubernate gather running")
+	daemonsets, err := d.client.ExtensionsV1beta1().DaemonSets(api.NamespaceAll).List(v1.ListOptions{})
+	if err != nil {
+		fmt.Println(err, "error")
+	}
 
 	deployments, err := d.client.ExtensionsV1beta1().Deployments(api.NamespaceAll).List(v1.ListOptions{})
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+
+	statefuls, err := d.client.AppsV1beta1().StatefulSets(api.NamespaceAll).List(v1.ListOptions{})
 	if err != nil {
 		fmt.Println(err)
 		return nil
@@ -106,16 +118,16 @@ func (d *Discovery) Run() *GathData {
 		}
 	}
 
-	fmt.Println("kubernate gather finished")
-
 	return &GathData{
-		pods:        pods,
-		nodes:       nodes,
-		services:    services,
-		endpoints:   endpoints,
-		deployments: deployments,
-		stacks:      stacks,
-		components:  components,
+		pods:         pods,
+		nodes:        nodes,
+		services:     services,
+		endpoints:    endpoints,
+		deployments:  deployments,
+		stacks:       stacks,
+		daemonsets:   daemonsets,
+		statefulsets: statefuls,
+		components:   components,
 	}
 
 }

@@ -46,6 +46,20 @@ func addMetrics() map[string]*prometheus.GaugeVec {
 			Help:      "status of deployment reported by kubernates",
 		}, []string{"name", "namespace"})
 
+	gaugeVecs["statefulsets"] = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "stateful_sets_status",
+			Help:      "status of stateful sets reported by kubernates",
+		}, []string{"name", "namespace"})
+
+	gaugeVecs["daemonsets"] = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: namespace,
+			Name:      "daemon_sets_status",
+			Help:      "status of daemon sets reported by kubernates",
+		}, []string{"name", "namespace"})
+
 	gaugeVecs["pods"] = prometheus.NewGaugeVec(
 		prometheus.GaugeOpts{
 			Namespace: namespace,
