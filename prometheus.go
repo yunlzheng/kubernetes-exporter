@@ -83,15 +83,21 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 			}
 
 			for _, deployment := range gathData.deployments.Items {
-				e.gaugeVecs["deployments"].With(prometheus.Labels{"name": deployment.Name, "namespace": deployment.Namespace}).Set(getDeploymentState(deployment))
+				var state = getDeploymentState(deployment)
+				e.gaugeVecs["deployments"].With(prometheus.Labels{"name": deployment.Name, "namespace": deployment.Namespace}).Set(state)
+				e.gaugeVecs["controller"].With(prometheus.Labels{"name": deployment.Name, "namespace": deployment.Namespace, "type": "deployment"}).Set(state)
 			}
 
 			for _, daemonset := range gathData.daemonsets.Items {
-				e.gaugeVecs["daemonsets"].With(prometheus.Labels{"name": daemonset.Name, "namespace": daemonset.Namespace}).Set(getDaemonSetState(daemonset))
+				var state = getDaemonSetState(daemonset)
+				e.gaugeVecs["daemonsets"].With(prometheus.Labels{"name": daemonset.Name, "namespace": daemonset.Namespace}).Set(state)
+				e.gaugeVecs["controller"].With(prometheus.Labels{"name": daemonset.Name, "namespace": daemonset.Namespace, "type": "daemonset"}).Set(state)
 			}
 
 			for _, statefulset := range gathData.statefulsets.Items {
-				e.gaugeVecs["statefulsets"].With(prometheus.Labels{"name": statefulset.Name, "namespace": statefulset.Namespace}).Set(getStatefulSetState(statefulset))
+				var state = getStatefulSetState(statefulset)
+				e.gaugeVecs["statefulsets"].With(prometheus.Labels{"name": statefulset.Name, "namespace": statefulset.Namespace}).Set(state)
+				e.gaugeVecs["controller"].With(prometheus.Labels{"name": statefulset.Name, "namespace": statefulset.Namespace, "type": "statefulset"}).Set(state)
 			}
 
 			for stack, deployments := range gathData.stacks {
