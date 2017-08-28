@@ -22,13 +22,11 @@ var (
 	endpoints       = []string{"nodes", "pods", "deployments"}
 	roles           = []string{"node", "pod", "service", "endpoints"}
 	logLevel        = getEnv("LOG_LEVEL", "info") // Optional - Set the logging level
-	apiServer       = getEnv("K8S_API_SERVER", "https://kubernetes.default.svc")
+	apiServer       = "https://kubernetes.default.svc"
 	bearerToken     = ""
-	bearerTokenFile = ""
+	bearerTokenFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 	tslConfig       = &TLSConfig{
-		CAFile:   "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
-		CertFile: "/Users/zhengyunlong/.minikube/apiserver.crt",
-		KeyFile:  "/Users/zhengyunlong/.minikube/apiserver.key",
+		CAFile: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt",
 	}
 )
 
