@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/mojo-zd/go-library/traverse"
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
@@ -37,99 +38,150 @@ type GathData struct {
 	components   map[KubeComponent]*[]v1.Pod
 }
 
+type ResourceStatus struct {
+	resources map[string]bool
+	status    chan string
+}
+
 // Run fetch kubernates data
-func (d *Discovery) Run() *GathData {
-
-	daemonsets, err := d.client.ExtensionsV1beta1().DaemonSets(api.NamespaceAll).List(v1.ListOptions{})
-	if err != nil {
-		fmt.Println(err, "error")
+func (d *Discovery) Run() (gathData *GathData) {
+	over := false
+	resourceStatus := ResourceStatus{
+		resources: map[string]bool{"daemonSets": true, "deployments": true, "statefuls": true, "pods": true, "nodes": true, "services": true, "endpoints": true},
+		status:    make(chan string),
 	}
 
-	deployments, err := d.client.ExtensionsV1beta1().Deployments(api.NamespaceAll).List(v1.ListOptions{})
-	if err != nil {
-		fmt.Println(err)
-		return nil
+	gathData = &GathData{}
+	go func() {
+		daemonSets, err := d.client.ExtensionsV1beta1().DaemonSets(api.NamespaceAll).List(v1.ListOptions{})
+		if err != nil {
+			fmt.Printf("daemonSets error info is %s\n", err.Error())
+		}
+		gathData.daemonsets = daemonSets
+		resourceStatus.status <- "daemonSets"
+	}()
+
+	go func() {
+		deployments, err := d.client.ExtensionsV1beta1().Deployments(api.NamespaceAll).List(v1.ListOptions{})
+		if err != nil {
+			fmt.Printf("deployments error info is %s\n", err.Error())
+		}
+		gathData.deployments = deployments
+		gathData.stacks = assembleStack(deployments)
+		resourceStatus.status <- "deployments"
+	}()
+
+	go func() {
+		statefuls, err := d.client.AppsV1beta1().StatefulSets(api.NamespaceAll).List(v1.ListOptions{})
+		if err != nil {
+			fmt.Printf("statefuls error info is %s\n", err.Error())
+		}
+		gathData.statefulsets = statefuls
+		resourceStatus.status <- "statefuls"
+	}()
+
+	go func() {
+		pods, err := d.client.CoreV1().Pods(api.NamespaceAll).List(v1.ListOptions{})
+		if err != nil {
+			fmt.Printf("pods error info is %s\n", err.Error())
+		}
+		gathData.pods = pods
+		gathData.components = assembleComponent(pods)
+		resourceStatus.status <- "pods"
+	}()
+
+	go func() {
+		nodes, err := d.client.CoreV1().Nodes().List(v1.ListOptions{})
+		if err != nil {
+			fmt.Printf("nodes error info is %s\n", err.Error())
+		}
+		gathData.nodes = nodes
+		resourceStatus.status <- "nodes"
+	}()
+
+	go func() {
+		services, err := d.client.CoreV1().Services(api.NamespaceAll).List(v1.ListOptions{})
+		if err != nil {
+			fmt.Printf("services error info is %s\n", err.Error())
+		}
+		gathData.services = services
+		resourceStatus.status <- "services"
+	}()
+
+	go func() {
+		endpoints, err := d.client.CoreV1().Endpoints(api.NamespaceAll).List(v1.ListOptions{})
+		if err != nil {
+			fmt.Printf("endpoints error info is %s\n", err.Error())
+		}
+		gathData.endpoints = endpoints
+		resourceStatus.status <- "endpoints"
+	}()
+
+	for {
+		select {
+		case state := <-resourceStatus.status:
+			delete(resourceStatus.resources, state)
+		default:
+			if len(resourceStatus.resources) == 0 {
+				over = true
+			}
+		}
+
+		if over {
+			break
+		}
 	}
+	return
+}
 
-	statefuls, err := d.client.AppsV1beta1().StatefulSets(api.NamespaceAll).List(v1.ListOptions{})
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
+func assembleStack(deployments *v1beta1.DeploymentList) (stacks map[Stack]*[]v1beta1.Deployment) {
+	stacks = map[Stack]*[]v1beta1.Deployment{}
 
-	pods, err := d.client.Core().Pods(api.NamespaceAll).List(v1.ListOptions{})
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-
-	nodes, err := d.client.Core().Nodes().List(v1.ListOptions{})
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-
-	services, err := d.client.Core().Services(api.NamespaceAll).List(v1.ListOptions{})
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-
-	endpoints, err := d.client.Core().Endpoints(api.NamespaceAll).List(v1.ListOptions{})
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-
-	stacks := map[Stack]*[]v1beta1.Deployment{}
-
-	for _, deployment := range deployments.Items {
+	traverse.Iterator(deployments.Items, func(index int, value interface{}) (flag traverse.CYCLE_FLAG) {
+		item := value.(v1beta1.Deployment)
 		stack := Stack{
-			Name:      stackName(deployment),
-			Namespace: deployment.Namespace,
+			Name:      stackName(item),
+			Namespace: item.Namespace,
 		}
 
-		if deployments, ok := stacks[stack]; ok {
-			*deployments = append(*deployments, deployment)
-			stacks[stack] = deployments
+		if deployment, ok := stacks[stack]; ok {
+			*deployment = append(*deployment, item)
+			stacks[stack] = deployment
 		} else {
-			stacks[stack] = &[]v1beta1.Deployment{deployment}
+			stacks[stack] = &[]v1beta1.Deployment{item}
 		}
-	}
+		return
+	})
+	return
+}
 
-	components := map[KubeComponent]*[]v1.Pod{}
-	for _, pod := range pods.Items {
-		if pod.Namespace == "kube-system" {
-			for _, component := range kubeComponents {
-				if strings.Contains(pod.Name, component) {
-					cmp := KubeComponent{
-						Name:      component,
-						Namespace: pod.Namespace,
-					}
+func assembleComponent(podList *v1.PodList) (components map[KubeComponent]*[]v1.Pod) {
+	components = map[KubeComponent]*[]v1.Pod{}
+	traverse.Iterator(podList.Items, func(index int, value interface{}) (flag traverse.CYCLE_FLAG) {
+		pod := value.(v1.Pod)
+		if pod.Namespace != "kube-system" {
+			flag = traverse.CONTINUE_FLAT
+			return
+		}
 
-					if pods, ok := components[cmp]; ok {
-						*pods = append(*pods, pod)
-						components[cmp] = pods
-					} else {
-						components[cmp] = &[]v1.Pod{pod}
-					}
+		for _, component := range kubeComponents {
+			if strings.Contains(pod.Name, component) {
+				cmp := KubeComponent{
+					Name:      component,
+					Namespace: pod.Namespace,
+				}
+
+				if pods, ok := components[cmp]; ok {
+					*pods = append(*pods, pod)
+					components[cmp] = pods
+				} else {
+					components[cmp] = &[]v1.Pod{pod}
 				}
 			}
 		}
-	}
-
-	return &GathData{
-		pods:         pods,
-		nodes:        nodes,
-		services:     services,
-		endpoints:    endpoints,
-		deployments:  deployments,
-		stacks:       stacks,
-		daemonsets:   daemonsets,
-		statefulsets: statefuls,
-		components:   components,
-	}
-
+		return
+	})
+	return
 }
 
 // New new discovery instance

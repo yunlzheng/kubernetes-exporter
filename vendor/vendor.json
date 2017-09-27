@@ -306,6 +306,18 @@
 			"revisionTime": "2016-04-24T11:30:07Z"
 		},
 		{
+			"checksumSHA1": "liuTM45PFYptbWsyDf0bSLFTJPc=",
+			"path": "github.com/mojo-zd/go-library/reflect",
+			"revision": "974adbe04ace1231b83c52f069488aeece075a59",
+			"revisionTime": "2017-09-24T07:03:54Z"
+		},
+		{
+			"checksumSHA1": "u5Oz8rxBWuaMXAE/sWoYbtgrQ2k=",
+			"path": "github.com/mojo-zd/go-library/traverse",
+			"revision": "974adbe04ace1231b83c52f069488aeece075a59",
+			"revisionTime": "2017-09-24T07:03:54Z"
+		},
+		{
 			"checksumSHA1": "3YJklSuzSE1Rt8A+2dhiWSmf/fw=",
 			"origin": "k8s.io/client-go/vendor/github.com/pborman/uuid",
 			"path": "github.com/pborman/uuid",
@@ -389,6 +401,12 @@
 			"revisionTime": "2017-02-13T17:46:50Z"
 		},
 		{
+			"checksumSHA1": "7CK6MSsy2UZZc1v565DBhrO8B4c=",
+			"path": "github.com/yunlzheng/kubernates-exporter/measure",
+			"revision": "03f81d4b6dd158b70e50848e7f157c61895ad1b2",
+			"revisionTime": "2017-09-07T02:11:27Z"
+		},
+		{
 			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",
 			"path": "golang.org/x/net/context",
 			"revision": ""
@@ -462,6 +480,12 @@
 			"path": "golang.org/x/oauth2/jwt",
 			"revision": "e121606b0d09b2e1c467183ee46217fa85a6b672",
 			"revisionTime": "2017-02-13T17:46:50Z"
+		},
+		{
+			"checksumSHA1": "zQ1i10+VxW8igU3Au7LskGPsswU=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9",
+			"revisionTime": "2016-09-14T20:33:16Z"
 		},
 		{
 			"checksumSHA1": "QQpKbWuqvhmxVr/hfEYdWzzcXRM=",
@@ -1366,5 +1390,5 @@
 			"revisionTime": "2017-02-13T17:46:50Z"
 		}
 	],
-	"rootPath": "github.com/yunlzheng/kubernates-exporter"
+	"rootPath": "github.com/yunlzheng/kubernetes-exporter"
 }
