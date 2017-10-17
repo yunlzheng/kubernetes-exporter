@@ -37,6 +37,9 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 			for _, pod := range gathData.pods.Items {
 				var state float64 = 1
 				containerSize := len(pod.Status.ContainerStatuses)
+				if containerSize == 0 {
+					state = 0
+				}
 				for _, item := range pod.Status.ContainerStatuses {
 					if !item.Ready {
 						state = 0
