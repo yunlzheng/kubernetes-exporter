@@ -150,9 +150,8 @@ func getDeploymentState(deployment v1beta1.Deployment) float64 {
 
 func getStatefulSetState(stateful beta.StatefulSet) float64 {
 	var state float64 = 1
-	fmt.Println(stateful.Spec.Selector, stateful.Status.Replicas)
-	// if stateful.Status.Replicas != stateful.Status.AvailableReplicas {
-	// 	state = 0
-	// }
+	if stateful.Spec.Replicas  != stateful.Status.Replicas {
+		state = 0
+	}
 	return state
 }

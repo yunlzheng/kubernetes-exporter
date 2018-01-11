@@ -230,7 +230,7 @@ func (e *Exporter) gatherData(ch chan<- prometheus.Metric) (*GathData, error) {
 
 	discovery, err := e.New()
 	if err != nil {
-		fmt.Println(0, err)
+		fmt.Println(err)
 		return nil, err
 	}
 
